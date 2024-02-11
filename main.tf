@@ -40,12 +40,6 @@ resource "aws_route_table_association" "rta2" {
 resource "aws_security_group" "webSg" {
   name   = "web"
   vpc_id = aws_vpc.myvpc.id
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
     description = "HTTP from VPC"
