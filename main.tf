@@ -141,3 +141,54 @@ output "loadbalancerdns" {
   value = aws_lb.myalb.dns_name
 }
 
+# Define launch configuration
+resource "aws_launch_configuration" "example" {
+  name_prefix          = "example-"
+  image_id             = "ami-0261755bbcb8c4a84"
+  instance_type        = "t2.micro"
+  security_groups      = [aws_security_group.webSg.id]
+  user_data            = "base64encode(file("userdata.sh, userdata1.sh"))"
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Define auto-scaling group
+resource "aws_autoscaling_group" "example" {
+  name                     = "example-asg"
+  launch_configuration    = aws_launch_configuration.example.name
+  min_size                 = 1
+  max_size                 = 5
+  desired_capacity         = 2
+  vpc_zone_identifier      = ["aws_subnet.sub1.id, aws_subnet.sub2.id"]
+  health_check_grace_period = 300
+  health_check_type         = "EC2"
+}
+
+# Define scaling policies
+resource "aws_autoscaling_policy" "scale_up_policy" {
+  name                  = "scale-up-policy"
+  scaling_adjustment    = 1
+  adjustment_type       = "ChangeInCapacity"
+  cooldown              = 300
+  autoscaling_group_name = aws_autoscaling_group.example.name
+
+  step_adjustment {
+    metric_interval_lower_bound = 0
+    scaling_adjustment          = 1
+  }
+}
+
+resource "aws_autoscaling_policy" "scale_down_policy" {
+  name                  = "scale-down-policy"
+  scaling_adjustment    = -1
+  adjustment_type       = "ChangeInCapacity"
+  cooldown              = 300
+  autoscaling_group_name = aws_autoscaling_group.example.name
+
+  step_adjustment {
+    metric_interval_upper_bound = 0
+    scaling_adjustment          = -1
+  }
+}
+
